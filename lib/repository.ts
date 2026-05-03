@@ -39,6 +39,7 @@ export async function loadAppData(): Promise<AppData> {
       reminders,
       inspections,
       packages,
+      bookingRequests,
       staff,
       settings,
       completedToday,
@@ -54,6 +55,7 @@ export async function loadAppData(): Promise<AppData> {
       prisma.reminder.findMany({ include: { vehicle: { include: { customer: true } } }, orderBy: { dueAt: "asc" }, take: 8 }),
       prisma.inspection.findMany({ include: { package: true, vehicle: { include: { customer: true } }, items: true }, orderBy: { createdAt: "desc" } }),
       prisma.inspectionPackage.findMany({ orderBy: { basePrice: "asc" } }),
+      prisma.portalRequest.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
       prisma.staffUser.findMany({ select: { id: true, name: true, email: true, role: true }, orderBy: { role: "asc" } }),
       prisma.companySettings.findFirst(),
       prisma.workOrder.count({ where: { completedAt: { gte: todayStart, lt: todayEnd } } }),
@@ -77,6 +79,7 @@ export async function loadAppData(): Promise<AppData> {
         reminders,
         inspections,
         packages,
+        bookingRequests,
         staff,
         settings: settings ?? {
           companyName: "KFZ Agani",

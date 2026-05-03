@@ -152,6 +152,25 @@ type StaffUser = {
   role: string;
 };
 
+type BookingRequest = {
+  id: string;
+  customerName: string;
+  phone: string;
+  whatsapp?: string | null;
+  email?: string | null;
+  preferredDate?: string | null;
+  preferredTime?: string | null;
+  serviceType: string;
+  message?: string | null;
+  gdprConsent: boolean;
+  vehicleBrand: string;
+  vehicleModel: string;
+  licensePlate: string;
+  mileage: number;
+  status: string;
+  createdAt: string;
+};
+
 type CompanySettings = {
   companyName: string;
   logoDataUrl?: string | null;
@@ -181,6 +200,7 @@ export type AppData = {
   reminders: Reminder[];
   inspections: Inspection[];
   packages: InspectionPackage[];
+  bookingRequests: BookingRequest[];
   staff: StaffUser[];
   settings: CompanySettings;
   metrics: {
@@ -222,6 +242,8 @@ const dbRoleToUiRole: Record<string, UserRole> = {
 
 const statusLabel: Record<string, string> = {
   ANGEFRAGT: "angefragt",
+  ABGELEHNT: "abgelehnt",
+  KONVERTIERT: "Auftrag erstellt",
   BESTAETIGT: "bestätigt",
   STORNIERT: "storniert",
   ABGESCHLOSSEN: "abgeschlossen",
@@ -254,6 +276,8 @@ const badgeTone: Record<string, string> = {
   ACHTUNG: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
   TEILZAHLUNG: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
   ANGEFRAGT: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  KONVERTIERT: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+  ABGELEHNT: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
   BESTAETIGT: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
   DEFEKT: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
   UNBEZAHLT: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
@@ -365,6 +389,21 @@ export function WorkshopApp({ data }: { data: AppData }) {
     if (!response.ok) {
       const result = await response.json().catch(() => ({ error: "Löschen fehlgeschlagen." }));
       setError(result.error || "Löschen fehlgeschlagen.");
+      return;
+    }
+    await refreshData();
+  };
+
+  const handleBookingRequest = async (id: string, action: "confirm" | "reject" | "convert") => {
+    setError("");
+    const response = await fetch("/api/booking/requests", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action })
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({ error: "Terminanfrage konnte nicht verarbeitet werden." }));
+      setError(result.error || "Terminanfrage konnte nicht verarbeitet werden.");
       return;
     }
     await refreshData();
@@ -566,6 +605,7 @@ export function WorkshopApp({ data }: { data: AppData }) {
                 setActive={setActive}
                 orderStatuses={orderStatuses}
                 onStatusChange={updateOrderStatus}
+                onBookingAction={handleBookingRequest}
               />
             )}
             {active === "checkin" && (
@@ -992,13 +1032,15 @@ function Dashboard({
   role,
   setActive,
   orderStatuses,
-  onStatusChange
+  onStatusChange,
+  onBookingAction
 }: {
   data: AppData;
   role: UserRole;
   setActive: (module: (typeof modules)[number]["id"]) => void;
   orderStatuses: Record<string, string>;
   onStatusChange: (orderId: string, status: string) => void;
+  onBookingAction: (id: string, action: "confirm" | "reject" | "convert") => void;
 }) {
   const openInvoices = data.invoices.filter((invoice) => invoice.status !== "BEZAHLT").length;
   const lowStock = data.parts.filter((part) => part.quantity <= part.lowStockAt).length;
@@ -1008,7 +1050,8 @@ function Dashboard({
     data.vehicles.length === 0 &&
     data.appointments.length === 0 &&
     data.workOrders.length === 0 &&
-    data.invoices.length === 0;
+    data.invoices.length === 0 &&
+    data.bookingRequests.length === 0;
 
   if (isCleanInstall) {
     return (
@@ -1094,6 +1137,8 @@ function Dashboard({
       </div>
 
       <OperationsStrip data={data} />
+
+      <BookingRequestsPanel requests={data.bookingRequests} onAction={onBookingAction} />
 
       <div className="grid gap-5 xl:grid-cols-[1.35fr_0.85fr]">
         <Panel title="Heute in der Annahme" action={`${data.todayAppointments.length} Termine`}>
@@ -1197,6 +1242,78 @@ function OperationsStrip({ data }: { data: AppData }) {
         </div>
       ))}
     </section>
+  );
+}
+
+function BookingRequestsPanel({
+  requests,
+  onAction
+}: {
+  requests: BookingRequest[];
+  onAction: (id: string, action: "confirm" | "reject" | "convert") => void;
+}) {
+  const openRequests = requests.filter((request) => request.status === "ANGEFRAGT");
+  const recentRequests = openRequests.length > 0 ? openRequests : requests.slice(0, 3);
+
+  return (
+    <Panel title="Neue Terminanfragen" action={`${openRequests.length} neu`}>
+      {recentRequests.length === 0 ? (
+        <div className="rounded-md border border-dashed border-slate-300 bg-white/50 p-5 text-sm font-semibold text-steel dark:border-white/15 dark:bg-white/5">
+          Keine neuen Terminanfragen. Öffentliche Anfragen über /booking erscheinen hier sofort.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {recentRequests.map((request) => {
+            const contactNumber = request.whatsapp || request.phone;
+            const vehicle = `${request.vehicleBrand} ${request.vehicleModel}${request.licensePlate ? ` · ${request.licensePlate}` : ""}`;
+            const message = `Hallo ${request.customerName}, vielen Dank fuer Ihre Terminanfrage bei KFZ Agani (${request.serviceType}). Wir melden uns zur Bestaetigung.`;
+            return (
+              <Row key={request.id}>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-black">{request.customerName}</h3>
+                    <Badge value={request.status} />
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-steel dark:bg-white/10">{request.serviceType}</span>
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-graphite dark:text-slate-200">{vehicle}</div>
+                  <div className="mt-1 text-sm text-steel">
+                    {request.preferredDate ? formatDate(request.preferredDate) : "Wunschtermin offen"}
+                    {request.preferredTime ? ` · ${request.preferredTime} Uhr` : ""}
+                    {request.mileage ? ` · ${number.format(request.mileage)} km` : ""}
+                  </div>
+                  {request.message && <p className="mt-2 line-clamp-2 text-sm text-steel">{request.message}</p>}
+                </div>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[260px]">
+                  <a
+                    href={whatsappLink(contactNumber, message)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="touch-button inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 px-3 py-3 text-sm font-black transition hover:border-emerald-500 hover:text-emerald-700 dark:border-white/10"
+                  >
+                    <Phone className="h-4 w-4" />
+                    WhatsApp
+                  </a>
+                  {request.status === "ANGEFRAGT" && (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <button onClick={() => onAction(request.id, "confirm")} className="touch-button rounded-md bg-ink px-3 py-3 text-sm font-black text-white shadow-lg shadow-ink/20 transition hover:bg-signal dark:bg-white dark:text-ink">
+                        Bestätigen
+                      </button>
+                      <button onClick={() => onAction(request.id, "reject")} className="touch-button rounded-md border border-slate-200 px-3 py-3 text-sm font-black transition hover:border-red-500 hover:text-red-600 dark:border-white/10">
+                        Ablehnen
+                      </button>
+                      <button onClick={() => onAction(request.id, "convert")} className="touch-button inline-flex items-center justify-center gap-1 rounded-md border border-slate-200 px-3 py-3 text-sm font-black transition hover:border-signal hover:text-signal dark:border-white/10">
+                        Auftrag
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Row>
+            );
+          })}
+        </div>
+      )}
+    </Panel>
   );
 }
 

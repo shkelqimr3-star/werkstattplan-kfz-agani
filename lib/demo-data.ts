@@ -12,6 +12,7 @@ export function demoData(): AppData {
     reminders: [],
     inspections: [],
     packages: [],
+    bookingRequests: [],
     staff: [],
     settings: {
       companyName: "KFZ Agani",

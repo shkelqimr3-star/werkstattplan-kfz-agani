@@ -21,8 +21,11 @@ export async function POST(request: Request) {
       data: {
         customerName: body.customerName || "",
         phone: body.phone || "",
+        whatsapp: body.whatsapp || body.phone || "",
         email: body.email || "",
         preferredDate: asDate(body.preferredDate),
+        preferredTime: body.preferredTime || "",
+        serviceType: body.serviceType || "Sonstiges",
         message: body.message || "",
         gdprConsent: true,
         vehicleBrand: body.vehicleBrand || "",

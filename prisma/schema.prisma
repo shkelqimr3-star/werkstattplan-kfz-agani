@@ -44,8 +44,11 @@ model PortalRequest {
   id             String   @id @default(cuid())
   customerName   String
   phone          String
+  whatsapp       String?
   email          String?
   preferredDate  DateTime?
+  preferredTime  String?
+  serviceType    String   @default("Sonstiges")
   message        String?
   gdprConsent    Boolean  @default(false)
   vehicleBrand   String

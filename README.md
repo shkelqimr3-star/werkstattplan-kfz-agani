@@ -13,6 +13,8 @@ npm run dev
 Danach laeuft die App normalerweise auf `http://localhost:3000`.
 Beim ersten Start zeigt WerkstattPlan eine Admin-Ersteinrichtung. Danach erfolgt der Login mit E-Mail und Passwort.
 
+Oeffentliche Terminanfragen sind ohne Login unter `/booking` erreichbar. Neue Anfragen werden als Status `angefragt` gespeichert und erscheinen im Admin-Dashboard unter `Neue Terminanfragen`.
+
 ## Datenbank
 
 - Prisma Schema: `prisma/schema.prisma`

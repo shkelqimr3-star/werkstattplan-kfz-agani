@@ -4,6 +4,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/setup",
+  "/booking",
   "/portal",
   "/impressum",
   "/datenschutz"
@@ -15,11 +16,13 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/login",
   "/api/auth/logout",
   "/api/auth/me",
+  "/api/booking/request",
   "/api/portal/request"
 ];
 
 const PROTECTED_PREFIXES = [
   "/api/data",
+  "/api/booking/requests",
   "/api/records",
   "/api/settings",
   "/api/export",
