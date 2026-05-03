@@ -1,9 +1,8 @@
 import { WorkshopApp } from "@/components/workshop-app";
-import { loadAppData } from "@/lib/repository";
+import { demoData } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const data = await loadAppData();
-  return <WorkshopApp data={data} />;
+  return <WorkshopApp data={demoData()} />;
 }

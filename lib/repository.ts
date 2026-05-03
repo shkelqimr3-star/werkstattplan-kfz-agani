@@ -40,6 +40,7 @@ export async function loadAppData(): Promise<AppData> {
       inspections,
       packages,
       staff,
+      settings,
       completedToday,
       monthlyPaidInvoices
     ] = await Promise.all([
@@ -54,6 +55,7 @@ export async function loadAppData(): Promise<AppData> {
       prisma.inspection.findMany({ include: { package: true, vehicle: { include: { customer: true } }, items: true }, orderBy: { createdAt: "desc" } }),
       prisma.inspectionPackage.findMany({ orderBy: { basePrice: "asc" } }),
       prisma.staffUser.findMany({ select: { id: true, name: true, email: true, role: true }, orderBy: { role: "asc" } }),
+      prisma.companySettings.findFirst(),
       prisma.workOrder.count({ where: { completedAt: { gte: todayStart, lt: todayEnd } } }),
       prisma.invoice.findMany({ where: { status: { in: ["BEZAHLT", "TEILWEISE_BEZAHLT", "TEILZAHLUNG"] }, issuedAt: { gte: monthStart, lte: monthEnd } } })
     ]);
@@ -76,6 +78,20 @@ export async function loadAppData(): Promise<AppData> {
         inspections,
         packages,
         staff,
+        settings: settings ?? {
+          companyName: "KFZ Agani",
+          logoDataUrl: "",
+          address: "",
+          phone: "",
+          email: "",
+          website: "",
+          taxNumber: "",
+          vatRate: 19,
+          invoicePrefix: "RE",
+          nextInvoiceNumber: 1,
+          openingHours: "",
+          weekendAvailability: true
+        },
         metrics: {
           openWorkOrders: workOrders.filter((order: any) => !["BEZAHLT", "ABGEHOLT"].includes(order.status)).length,
           completedToday,
@@ -129,4 +145,26 @@ export async function findInspection(id: string) {
     }
   }
   return (demoData().inspections as any[]).find((inspection) => inspection.id === id) ?? null;
+}
+
+export async function getCompanySettings() {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      return (
+        (await prisma.companySettings.findFirst()) ?? {
+          companyName: "KFZ Agani",
+          address: "",
+          phone: "",
+          email: "",
+          website: "",
+          taxNumber: "",
+          vatRate: 19
+        }
+      );
+    } finally {
+      await prisma.$disconnect();
+    }
+  }
+  return demoData().settings;
 }

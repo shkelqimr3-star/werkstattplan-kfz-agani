@@ -13,6 +13,20 @@ export function demoData(): AppData {
     inspections: [],
     packages: [],
     staff: [],
+    settings: {
+      companyName: "KFZ Agani",
+      logoDataUrl: "",
+      address: "",
+      phone: "",
+      email: "",
+      website: "",
+      taxNumber: "",
+      vatRate: 19,
+      invoicePrefix: "RE",
+      nextInvoiceNumber: 1,
+      openingHours: "",
+      weekendAvailability: true
+    },
     metrics: {
       openWorkOrders: 0,
       completedToday: 0,

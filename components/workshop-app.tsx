@@ -152,6 +152,21 @@ type StaffUser = {
   role: string;
 };
 
+type CompanySettings = {
+  companyName: string;
+  logoDataUrl?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+  taxNumber?: string | null;
+  vatRate: number;
+  invoicePrefix: string;
+  nextInvoiceNumber: number;
+  openingHours?: string | null;
+  weekendAvailability: boolean;
+};
+
 type UserRole = "Admin" | "Mechanic" | "Reception";
 type CreateKind = "customer" | "vehicle" | "appointment" | "order" | "invoice" | "part" | "reminder" | "inspection" | "staff";
 
@@ -167,6 +182,7 @@ export type AppData = {
   inspections: Inspection[];
   packages: InspectionPackage[];
   staff: StaffUser[];
+  settings: CompanySettings;
   metrics: {
     openWorkOrders: number;
     completedToday: number;
@@ -326,6 +342,21 @@ export function WorkshopApp({ data }: { data: AppData }) {
     }
     await refreshData();
     setCreateKind(null);
+  };
+
+  const saveSettings = async (values: Record<string, string>) => {
+    setError("");
+    const response = await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values)
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({ error: "Einstellungen konnten nicht gespeichert werden." }));
+      setError(result.error || "Einstellungen konnten nicht gespeichert werden.");
+      return;
+    }
+    await refreshData();
   };
 
   const deleteRecord = async (kind: CreateKind, id: string) => {
@@ -555,7 +586,7 @@ export function WorkshopApp({ data }: { data: AppData }) {
             {active === "communication" && <Communication customers={filteredCustomers} onCreate={() => setCreateKind("customer")} />}
             {active === "reports" && <Reports data={appData} report={report} onCreate={() => setCreateKind("invoice")} />}
             {active === "inspection" && <InspectionModule inspections={appData.inspections} packages={appData.packages} onCreate={() => setCreateKind("inspection")} />}
-            {active === "settings" && <AdminSettings />}
+            {active === "settings" && <AdminSettings settings={appData.settings} onSave={saveSettings} />}
             {active === "roles" && <Roles staff={appData.staff} onCreate={() => setCreateKind("staff")} onDelete={(id) => deleteRecord("staff", id)} />}
           </section>
         </div>
@@ -641,10 +672,53 @@ function LoginScreen({
                 </h2>
                 <div className="mt-5 grid gap-3">
                   {needsSetup && (
-                    <label className="text-sm font-bold text-steel">
-                      Name
-                      <input name="name" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" required />
-                    </label>
+                    <>
+                      <label className="text-sm font-bold text-steel">
+                        Firmenname
+                        <input name="companyName" defaultValue="KFZ Agani" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" required />
+                      </label>
+                      <LogoUploadField />
+                      <label className="text-sm font-bold text-steel">
+                        Adresse
+                        <input name="address" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        Telefon
+                        <input name="phone" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        Firmen-E-Mail
+                        <input name="companyEmail" type="email" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        Website
+                        <input name="website" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        Steuernummer
+                        <input name="taxNumber" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        MwSt. %
+                        <input name="vatRate" type="number" defaultValue="19" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        Rechnungspräfix
+                        <input name="invoicePrefix" defaultValue="RE" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        Öffnungszeiten
+                        <input name="openingHours" placeholder="Mo-Fr ab 17:00, Sa nach Vereinbarung" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+                      </label>
+                      <label className="flex items-center gap-3 text-sm font-bold text-steel">
+                        <input name="weekendAvailability" type="checkbox" defaultChecked className="h-5 w-5" />
+                        Wochenendtermine anbieten
+                      </label>
+                      <label className="text-sm font-bold text-steel">
+                        Admin Name
+                        <input name="name" className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" required />
+                      </label>
+                    </>
                   )}
                   <label className="text-sm font-bold text-steel">
                     E-Mail
@@ -1598,7 +1672,7 @@ function Reports({ data, report, onCreate }: { data: AppData; report: { openInvo
   );
 }
 
-function AdminSettings() {
+function AdminSettings({ settings, onSave }: { settings: CompanySettings; onSave: (values: Record<string, string>) => void }) {
   const exports = [
     { label: "Kunden als CSV exportieren", href: "/api/export/csv/customers" },
     { label: "Fahrzeuge als CSV exportieren", href: "/api/export/csv/vehicles" },
@@ -1607,6 +1681,37 @@ function AdminSettings() {
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
+      <Panel title="Company Profile" action="Onboarding">
+        <form
+          className="grid gap-3 sm:grid-cols-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSave(Object.fromEntries(new FormData(event.currentTarget).entries()) as Record<string, string>);
+          }}
+        >
+          <FieldInput name="companyName" label="Firmenname" defaultValue={settings.companyName} />
+          <LogoUploadField defaultValue={settings.logoDataUrl ?? ""} />
+          <FieldInput name="address" label="Adresse" defaultValue={settings.address ?? ""} />
+          <FieldInput name="phone" label="Telefon" defaultValue={settings.phone ?? ""} />
+          <FieldInput name="email" label="E-Mail" defaultValue={settings.email ?? ""} />
+          <FieldInput name="website" label="Website" defaultValue={settings.website ?? ""} />
+          <FieldInput name="taxNumber" label="Steuernummer" defaultValue={settings.taxNumber ?? ""} />
+          <FieldInput name="vatRate" label="MwSt. %" type="number" defaultValue={String(settings.vatRate)} />
+          <FieldInput name="invoicePrefix" label="Rechnungspräfix" defaultValue={settings.invoicePrefix} />
+          <FieldInput name="nextInvoiceNumber" label="Nächste Rechnungsnummer" type="number" defaultValue={String(settings.nextInvoiceNumber)} />
+          <label className="sm:col-span-2 text-sm font-bold text-steel">
+            Öffnungszeiten
+            <input name="openingHours" defaultValue={settings.openingHours ?? ""} className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+          </label>
+          <label className="flex items-center gap-3 text-sm font-bold text-steel">
+            <input name="weekendAvailability" type="checkbox" defaultChecked={settings.weekendAvailability} className="h-5 w-5" />
+            Wochenendtermine
+          </label>
+          <button className="touch-button rounded-md bg-ink px-5 py-3 text-sm font-black text-white shadow-lg shadow-ink/20 transition hover:bg-signal dark:bg-white dark:text-ink sm:col-span-2">
+            Einstellungen speichern
+          </button>
+        </form>
+      </Panel>
       <Panel title="Backup und Export" action="Admin">
         <div className="grid gap-3">
           {exports.map((item) => (
@@ -1623,11 +1728,44 @@ function AdminSettings() {
       </Panel>
       <Panel title="Betriebsdaten" action="KFZ Agani">
         <div className="space-y-3 text-sm text-steel">
-          <p>PDF-Belege enthalten KFZ Agani Branding sowie Platzhalter fuer Adresse, Telefon, E-Mail und Steuernummer.</p>
+          <p>PDF-Belege nutzen Firmenname, Adresse, Telefon, E-Mail, Steuernummer, MwSt.-Satz und Rechnungsnummern aus diesen Einstellungen.</p>
           <p>Die SQLite-Datenbank liegt lokal unter `prisma/dev.db` und bleibt nach Neustart erhalten.</p>
+          <p>Öffentliche Seiten: <a className="font-black text-signal" href="/portal" target="_blank">Kundenportal</a>, <a className="font-black text-signal" href="/impressum" target="_blank">Impressum</a>, <a className="font-black text-signal" href="/datenschutz" target="_blank">Datenschutz</a>.</p>
         </div>
       </Panel>
     </div>
+  );
+}
+
+function FieldInput({ name, label, defaultValue, type = "text" }: { name: string; label: string; defaultValue: string; type?: string }) {
+  return (
+    <label className="text-sm font-bold text-steel">
+      {label}
+      <input name={name} type={type} defaultValue={defaultValue} className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white" />
+    </label>
+  );
+}
+
+function LogoUploadField({ defaultValue = "" }: { defaultValue?: string }) {
+  const [logo, setLogo] = useState(defaultValue);
+  return (
+    <label className="text-sm font-bold text-steel">
+      Logo Upload
+      <input name="logoDataUrl" type="hidden" value={logo} />
+      <input
+        type="file"
+        accept="image/*"
+        className="mt-1 w-full rounded-md border border-slate-200 bg-white/80 px-3 py-3 text-ink outline-none file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-black file:text-white focus:border-signal dark:border-white/10 dark:bg-white/5 dark:text-white dark:file:bg-white dark:file:text-ink"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => setLogo(String(reader.result));
+          reader.readAsDataURL(file);
+        }}
+      />
+      {logo && <span className="mt-1 block text-xs font-semibold text-emerald-600">Logo bereit zum Speichern</span>}
+    </label>
   );
 }
 

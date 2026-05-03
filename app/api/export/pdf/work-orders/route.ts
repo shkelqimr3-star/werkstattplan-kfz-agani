@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
+import { cookies } from "next/headers";
+import { COOKIE_NAME, readSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 
@@ -7,6 +9,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const user = readSession(cookies().get(COOKIE_NAME)?.value);
+  if (!user || user.role !== "ADMIN") return NextResponse.json({ error: "Nur Admins duerfen exportieren." }, { status: 403 });
   const db = getDb();
   try {
     const orders = await db.workOrder.findMany({ include: { customer: true, vehicle: true, parts: true }, orderBy: { createdAt: "desc" } });

@@ -37,6 +37,10 @@ PDFs werden serverseitig mit `pdfkit` erzeugt:
 - Terminverwaltung mit Werktagsslots nach 17:00 Uhr und Wochenendverfuegbarkeit
 - Digitale Arbeitsauftraege mit Statusstrecke, Diagnose, Teilen, Arbeitszeit, Fotos und Notizen
 - Angebote, Rechnungen, MwSt., Rabatt, Zahlungsstatus und PDF-Ausgabe
+- Company-Onboarding mit Firmenprofil, Logo, Adresse, Telefon, E-Mail, Website, Steuernummer, MwSt., Rechnungsnummern und erstem Admin
+- Öffentliches Kundenportal unter `/portal` fuer Terminanfragen, Fahrzeugdaten, Fotoupload und DSGVO-Einwilligung
+- Impressum und Datenschutz unter `/impressum` und `/datenschutz`
+- Admin-Export fuer Kunden CSV, Fahrzeuge CSV und Arbeitsauftraege PDF
 - Lagerbestand mit Einkauf, Verkauf, Marge und Niedrigbestand-Warnung
 - TUEV-, Oelservice-, Bremsen- und individuelle Erinnerungen
 - WhatsApp-Vorlagen fuer Terminbestaetigung, fertige Inspektion und Serviceerinnerung

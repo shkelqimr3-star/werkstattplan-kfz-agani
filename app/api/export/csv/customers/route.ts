@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { COOKIE_NAME, readSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -8,6 +10,8 @@ const csv = (rows: string[][]) =>
   rows.map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(";")).join("\n");
 
 export async function GET() {
+  const user = readSession(cookies().get(COOKIE_NAME)?.value);
+  if (!user || user.role !== "ADMIN") return NextResponse.json({ error: "Nur Admins duerfen exportieren." }, { status: 403 });
   const db = getDb();
   try {
     const customers = await db.customer.findMany({ orderBy: { name: "asc" } });

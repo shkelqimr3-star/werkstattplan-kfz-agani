@@ -1,24 +1,25 @@
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
 import { currency, formatDate } from "@/lib/format";
-import { findInvoice } from "@/lib/repository";
+import { findInvoice, getCompanySettings } from "@/lib/repository";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const invoice = await findInvoice(params.id);
+  const settings = await getCompanySettings();
 
   if (!invoice) {
     return NextResponse.json({ error: "Beleg nicht gefunden" }, { status: 404 });
   }
 
   const pdf = await renderPdf((doc) => {
-    drawHeader(doc, invoice.type, invoice.number);
-    doc.fontSize(10).fillColor("#667085").text("KFZ Agani", 50, 118);
-    doc.text("Adresse: bitte in den Einstellungen hinterlegen", 50, 133);
-    doc.text("Telefon: Platzhalter · E-Mail: platzhalter@kfz-agani.de", 50, 148);
-    doc.text("Steuernummer: Platzhalter", 50, 163);
+    drawHeader(doc, invoice.type, invoice.number, settings.companyName || "KFZ Agani");
+    doc.fontSize(10).fillColor("#667085").text(settings.companyName || "KFZ Agani", 50, 118);
+    doc.text(settings.address || "Adresse in Admin-Einstellungen hinterlegen", 50, 133);
+    doc.text(`Telefon: ${settings.phone || "-"} · E-Mail: ${settings.email || "-"}`, 50, 148);
+    doc.text(`Steuernummer: ${settings.taxNumber || "-"}`, 50, 163);
 
     doc.fillColor("#101820").fontSize(11).font("Helvetica-Bold").text("Kunde", 360, 118);
     doc.font("Helvetica").fontSize(10).text(invoice.customer.name, 360, 136);
@@ -66,10 +67,10 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   });
 }
 
-function drawHeader(doc: PDFKit.PDFDocument, type: string, number: string) {
+function drawHeader(doc: PDFKit.PDFDocument, type: string, number: string, companyName: string) {
   doc.rect(0, 0, 595, 92).fill("#101820");
   doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(24).text("WerkstattPlan", 50, 28);
-  doc.fillColor("#f5a524").fontSize(9).text("by KFZ Agani", 52, 58);
+  doc.fillColor("#f5a524").fontSize(9).text(`by ${companyName}`, 52, 58);
   doc.fillColor("#ffffff").fontSize(18).text(`${type} ${number}`, 330, 34, { width: 215, align: "right" });
 }
 

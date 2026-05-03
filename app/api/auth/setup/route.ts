@@ -21,6 +21,21 @@ export async function POST(request: Request) {
         role: "ADMIN"
       }
     });
+    await db.companySettings.create({
+      data: {
+        companyName: body.companyName || "KFZ Agani",
+        logoDataUrl: body.logoDataUrl || "",
+        address: body.address || "",
+        phone: body.phone || "",
+        email: body.companyEmail || body.email || "",
+        website: body.website || "",
+        taxNumber: body.taxNumber || "",
+        vatRate: Number(body.vatRate || 19),
+        invoicePrefix: body.invoicePrefix || "RE",
+        openingHours: body.openingHours || "",
+        weekendAvailability: body.weekendAvailability === "on" || body.weekendAvailability === true
+      }
+    });
     const sessionUser = { id: user.id, email: user.email, name: user.name, role: user.role };
     return NextResponse.json(
       { user: sessionUser },

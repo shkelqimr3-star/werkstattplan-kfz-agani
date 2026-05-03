@@ -23,6 +23,40 @@ model Customer {
   invoices    Invoice[]
 }
 
+model CompanySettings {
+  id                  String   @id @default(cuid())
+  companyName         String   @default("KFZ Agani")
+  logoDataUrl         String?
+  address             String?
+  phone               String?
+  email               String?
+  website             String?
+  taxNumber           String?
+  vatRate             Float    @default(19)
+  invoicePrefix       String   @default("RE")
+  nextInvoiceNumber   Int      @default(1)
+  openingHours        String?
+  weekendAvailability Boolean  @default(true)
+  updatedAt           DateTime @updatedAt
+}
+
+model PortalRequest {
+  id             String   @id @default(cuid())
+  customerName   String
+  phone          String
+  email          String?
+  preferredDate  DateTime?
+  message        String?
+  gdprConsent    Boolean  @default(false)
+  vehicleBrand   String
+  vehicleModel   String
+  licensePlate   String
+  mileage        Int      @default(0)
+  photos         String?
+  status         String   @default("ANGEFRAGT")
+  createdAt      DateTime @default(now())
+}
+
 model Vehicle {
   id             String        @id @default(cuid())
   customerId     String

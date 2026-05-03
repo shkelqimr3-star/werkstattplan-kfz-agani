@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
 import { currency, formatDate } from "@/lib/format";
-import { findInspection } from "@/lib/repository";
+import { findInspection, getCompanySettings } from "@/lib/repository";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,6 +15,7 @@ const statusText: Record<string, string> = {
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const inspection = await findInspection(params.id);
+  const settings = await getCompanySettings();
 
   if (!inspection) {
     return NextResponse.json({ error: "Pruefbericht nicht gefunden" }, { status: 404 });
@@ -22,7 +23,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
   const pdf = await renderPdf((doc) => {
     doc.rect(0, 0, 595, 96).fill("#101820");
-    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(24).text("KFZ Agani", 50, 28);
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(24).text(settings.companyName || "KFZ Agani", 50, 28);
     doc.fillColor("#f5a524").fontSize(10).text("WerkstattPlan Inspektionsbericht", 52, 60);
     doc.fillColor("#ffffff").fontSize(16).text(inspection.reportNumber, 355, 36, { width: 190, align: "right" });
 
