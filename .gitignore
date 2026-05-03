@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+.env.local
+prisma/dev.db
+prisma/dev.db-journal
+.tools
+.npm-cache
+.npm-tmp
+.next-dev.log
+.next-dev.err.log
+tsconfig.tsbuildinfo

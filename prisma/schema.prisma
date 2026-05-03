@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id          String       @id @default(cuid())
+  name        String
+  phone       String
+  whatsapp    String
+  email       String?
+  address     String?
+  notes       String?
+  gdprConsent Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  vehicles    Vehicle[]
+  appointments Appointment[]
+  workOrders  WorkOrder[]
+  invoices    Invoice[]
+}
+
+model Vehicle {
+  id             String        @id @default(cuid())
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  brand          String
+  model          String
+  licensePlate   String        @unique
+  vin            String?
+  mileage        Int
+  engine         String?
+  year           Int
+  fuelType       String
+  tuvDate        DateTime
+  lastOilService DateTime?
+  nextOilService DateTime?
+  notes          String?
+  appointments   Appointment[]
+  workOrders     WorkOrder[]
+  reminders      Reminder[]
+  inspections    Inspection[]
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  customerId  String
+  vehicleId   String
+  customer    Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle     Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  startsAt    DateTime
+  endsAt      DateTime
+  title       String
+  notes       String?
+  status      String   @default("ANGEFRAGT")
+}
+
+model WorkOrder {
+  id                String          @id @default(cuid())
+  number            String          @unique
+  customerId         String
+  vehicleId          String
+  customer           Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle            Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  customerComplaint  String
+  diagnosis          String?
+  workPerformed      String?
+  laborHours         Float           @default(0)
+  mechanicNotes      String?
+  status             String          @default("GEPLANT")
+  photoBefore        String?
+  photoAfter         String?
+  completedAt        DateTime?
+  createdAt          DateTime        @default(now())
+  parts              WorkOrderPart[]
+  invoice            Invoice?
+}
+
+model WorkOrderPart {
+  id          String    @id @default(cuid())
+  workOrderId String
+  partId      String?
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  part        Part?     @relation(fields: [partId], references: [id])
+  name        String
+  quantity    Int
+  unitPrice   Float
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  number      String        @unique
+  customerId  String
+  workOrderId String?       @unique
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  workOrder   WorkOrder?    @relation(fields: [workOrderId], references: [id])
+  type        String
+  laborCost   Float
+  partsCost   Float
+  discount    Float         @default(0)
+  vatRate     Float         @default(19)
+  total       Float
+  status      String   @default("UNBEZAHLT")
+  issuedAt    DateTime      @default(now())
+  items       InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float
+  unitPrice   Float
+}
+
+model Part {
+  id            String          @id @default(cuid())
+  name          String
+  sku           String          @unique
+  quantity      Int
+  purchasePrice Float
+  sellingPrice  Float
+  lowStockAt    Int             @default(3)
+  usedInOrders  WorkOrderPart[]
+}
+
+model Reminder {
+  id        String       @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  type      String
+  dueAt     DateTime
+  message   String
+  done      Boolean      @default(false)
+}
+
+model InspectionPackage {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String
+  basePrice   Float
+  checklist   String
+  inspections Inspection[]
+}
+
+model Inspection {
+  id             String            @id @default(cuid())
+  packageId      String
+  vehicleId      String
+  package        InspectionPackage @relation(fields: [packageId], references: [id])
+  vehicle        Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  reportNumber   String            @unique
+  notes          String?
+  photos         String?
+  recommendation String?
+  estimatedCost  Float             @default(0)
+  createdAt      DateTime          @default(now())
+  items          InspectionItem[]
+}
+
+model InspectionItem {
+  id           String           @id @default(cuid())
+  inspectionId String
+  inspection   Inspection       @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  label        String
+  status       String     @default("NICHT_GEPRUEFT")
+  notes        String?
+}
+
+model StaffUser {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+}
